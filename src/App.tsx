@@ -33,7 +33,6 @@ export default function App() {
 
   const { roomId } = useParams();
   const localRef = useRef<HTMLVideoElement>(null);
-  const localStream = useRef<MediaStream | null>(null);
 
   const [iceServersFetched, setIceServersFetched] = useState(false);
   const iceServers = useRef<RTCIceServer[]>([]);
@@ -41,6 +40,7 @@ export default function App() {
   const [remoteUserIds, setRemoteUserIds] = useState<string[]>([]);
   const remoteUsers = useRef<{ [key: string]: RemoteUser }>({});
   const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
 
   /* Firebase Database References*/
   const room = roomId || 'default-room';
@@ -50,6 +50,12 @@ export default function App() {
   const roomOccupancyRef = ref(db, [room, users].join('/'));
   const userPresenceRef = ref(db, [room, users, userId].join('/'));
   const userSignalsRef = ref(db, [room, signals, userId].join('/'));
+
+  // Update both state and ref when mute state changes
+  const setMuteState = (muted: boolean) => {
+    setIsMuted(muted);
+    isMutedRef.current = muted;
+  };
 
   // Function to clean up a peer connection
   const cleanupPeerConnection = (remoteUserId: string) => {
@@ -64,11 +70,12 @@ export default function App() {
 
   // Effect to update peer connections when mute state changes
   useEffect(() => {
-    if (localStream.current) {
-      localStream.current.getAudioTracks().forEach(track => {
-        track.enabled = !isMuted;
+    Object.values(remoteUsers.current).forEach(remoteUser => {
+      remoteUser.peerConnection?.getSenders().forEach(sender => {
+        if (sender.track?.kind === 'audio')
+          sender.track.enabled = !isMuted;
       });
-    }
+    });
   }, [isMuted]);
 
   const getIceServers = async () => {
@@ -167,12 +174,15 @@ export default function App() {
     };
 
     // add local media stream to the peer connection, to prepare for sending an answer
-    if (!localStream.current) {
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    }
-
-    localStream.current.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream.current!);
+    const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    console.log('Current mute state:', isMutedRef.current);
+    localStream.getTracks().forEach(track => {
+      console.log(track.kind);
+      if (track.kind === 'audio') {
+        track.enabled = !isMutedRef.current;
+        console.log('Track enabled:', track.enabled, 'Muted:', isMutedRef.current);
+      }
+      peerConnection.addTrack(track, localStream);
     });
 
     // Store the peer connection in the remote users ref
@@ -185,10 +195,8 @@ export default function App() {
   /* Initialize asynchronous operations */
   const initialize = async () => {
     // attach local media stream to the local video element
-    if (!localStream.current) {
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    }
-    localRef.current!.srcObject = localStream.current;
+    const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localRef.current!.srcObject = localStream;
 
     // Get the current user ids from the room occupancy
     const userIds = [...Object.keys((await get(roomOccupancyRef)).val() || {})];
@@ -359,7 +367,7 @@ export default function App() {
             remoteUserIds={remoteUserIds}
             remoteUsers={remoteUsers.current}
             isMuted={isMuted}
-            setIsMuted={setIsMuted}
+            setIsMuted={setMuteState}
           />
         </VStack>
       </Container>
