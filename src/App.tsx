@@ -177,10 +177,9 @@ export default function App() {
 
     // Store the peer connection in the remote users ref
     if (!remoteUsers.current[remoteUserId]) {
-      remoteUsers.current[remoteUserId] = {
-        peerConnection: peerConnection,
-      };
+      remoteUsers.current[remoteUserId] = {};
     }
+    remoteUsers.current[remoteUserId].peerConnection = peerConnection;
   }
 
   /* Initialize asynchronous operations */
