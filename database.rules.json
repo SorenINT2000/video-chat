@@ -1,6 +1,24 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    "$room": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "users": {
+        "$userId": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $userId",
+          ".validate": "newData.child('joined').exists()"
+        }
+      },
+      "signals": {
+        "$userId": {
+          ".read": "auth != null && auth.uid === $userId",
+          ".write": "auth != null && auth.uid !== $userId",
+          "$signalId": {
+            ".validate": "newData.child('type').exists() && newData.child('from').exists()"
+          }
+        }
+      }
+    }
   }
 }

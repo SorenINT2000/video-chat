@@ -15,8 +15,8 @@ import VideoGrid from './components/VideoGrid';
 type Signal = {
   type: 'offer' | 'answer' | 'candidate';
   from: string;
-  sdp?: string;
-  candidate?: RTCIceCandidateInit;
+  sdp: string;
+  candidate: RTCIceCandidateInit;
 }
 
 type RemoteUser = {
@@ -175,13 +175,9 @@ export default function App() {
 
     // add local media stream to the peer connection, to prepare for sending an answer
     const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    console.log('Current mute state:', isMutedRef.current);
     localStream.getTracks().forEach(track => {
-      console.log(track.kind);
-      if (track.kind === 'audio') {
+      if (track.kind === 'audio')
         track.enabled = !isMutedRef.current;
-        console.log('Track enabled:', track.enabled, 'Muted:', isMutedRef.current);
-      }
       peerConnection.addTrack(track, localStream);
     });
 

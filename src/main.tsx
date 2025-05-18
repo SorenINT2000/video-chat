@@ -1,11 +1,9 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Provider } from "./components/ui/provider"
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  // <StrictMode>
   <Provider>
     <BrowserRouter>
       <Routes>
@@ -14,5 +12,4 @@ createRoot(document.getElementById('root')!).render(
       </Routes>
     </BrowserRouter>
   </Provider>
-  // </StrictMode>
 )
